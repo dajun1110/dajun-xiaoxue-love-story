@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <title>大骏和小雪的幸福网站</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              heading: ['Instrument Serif', 'serif'],
+              body: ['Barlow', 'sans-serif'],
+            },
+          },
+        },
+      };
+    </script>
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+    <script src="https://unpkg.com/framer-motion@11.11.17/dist/framer-motion.js"></script>
+    <script>window.Motion = window.FramerMotion;</script>
+    <style>
+      html { background: #000; scroll-behavior: smooth; }
+      body { margin: 0; background: #000; color: #fff; font-family: 'Barlow', sans-serif; }
+      .liquid-glass {
+        background: rgba(255,255,255,0.01);
+        background-blend-mode: luminosity;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border: none;
+        box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+        position: relative;
+        overflow: hidden;
+      }
+      .liquid-glass::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1.4px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+      .liquid-glass-strong {
+        background: rgba(255,255,255,0.01);
+        background-blend-mode: luminosity;
+        backdrop-filter: blur(50px);
+        -webkit-backdrop-filter: blur(50px);
+        border: none;
+        box-shadow: 4px 4px 4px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.15);
+        position: relative;
+        overflow: hidden;
+      }
+      .liquid-glass-strong::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1.4px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.2) 80%, rgba(255,255,255,0.5) 100%);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+      button, a { -webkit-tap-highlight-color: transparent; }
+      .video-layer { pointer-events: none; }
+      .circular-gallery { width: 100%; height: 100%; min-height: 360px; overflow: hidden; cursor: grab; touch-action: pan-y; }
+      .circular-gallery:active { cursor: grabbing; }
+      .circular-gallery canvas { display: block; width: 100%; height: 100%; }
+      .gallery-fallback { display: flex; height: 100%; gap: 16px; overflow-x: auto; padding: 8px 8px 20px; scroll-snap-type: x mandatory; }
+      .gallery-fallback figure { flex: 0 0 min(72vw, 360px); margin: 0; scroll-snap-align: center; }
+      .gallery-fallback img { display: block; width: 100%; height: calc(100% - 32px); border-radius: 8px; object-fit: cover; }
+      .gallery-fallback figcaption { margin-top: 10px; text-align: center; font-size: 13px; color: rgba(255,255,255,0.75); }
+      .memory-carousel { position: relative; display: grid; box-sizing: border-box; height: 100%; min-height: 640px; padding: 44px 0 56px; place-items: center; overflow: hidden; border: 1px solid #30283a; border-radius: 28px; background: #110e15; outline: none; }
+      .memory-carousel:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+      .memory-focus { position: relative; z-index: 3; width: fit-content; max-width: 70vw; margin: 0; transition: transform 360ms ease; }
+      .memory-focus img { display: block; width: auto; max-width: 100%; height: min(55vh, 440px); aspect-ratio: .78; border-radius: 14px; object-fit: cover; box-shadow: 0 28px 58px rgba(0,0,0,.4); }
+      .memory-preview { position: absolute; top: 50%; z-index: 1; width: min(20vw, 220px); margin: 0; opacity: .45; transition: transform 360ms ease, opacity 360ms ease; }
+      .memory-preview img { display: block; width: 100%; aspect-ratio: .78; border-radius: 12px; object-fit: cover; filter: saturate(.7) brightness(.75); }
+      .memory-preview--left { left: max(-2vw, -20px); transform: translateY(-50%) rotate(-7deg); }
+      .memory-preview--right { right: max(-2vw, -20px); transform: translateY(-50%) rotate(7deg); }
+      .memory-nav { position: absolute; top: 50%; z-index: 4; display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; background: rgba(17,14,21,.72); color: #fff; cursor: pointer; font-size: 22px; line-height: 1; transform: translateY(-50%); }
+      .memory-nav:hover { background: rgba(255,255,255,.14); }
+      .memory-nav--prev { left: max(24px, 8vw); }
+      .memory-nav--next { right: max(24px, 8vw); }
+      @media (max-width: 640px) {
+        .memory-carousel { min-height: 500px; padding: 34px 0 46px; border-radius: 18px; }
+        .memory-focus { max-width: 70vw; }
+        .memory-focus img { height: min(48vh, 340px); }
+        .memory-preview { width: 28vw; opacity: .28; }
+        .memory-nav { width: 36px; height: 36px; font-size: 18px; }
+        .memory-nav--prev { left: 10px; }
+        .memory-nav--next { right: 10px; }
+      }
+      @media (max-width: 640px) {
+        .headline { letter-spacing: -2px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      // The page remains visible if the optional animation CDN is delayed or unavailable.
+      const fallbackMotion = new Proxy({}, {
+        get: (_, tag) => ({ children, initial, animate, transition, ...props }) => React.createElement(tag, props, children),
+      });
+      const { motion } = window.Motion || { motion: fallbackMotion };
+
+      const ArrowUpRight = ({ className = 'h-4 w-4' }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M7 17 17 7" /><path d="M8 7h9v9" />
+        </svg>
+      );
+      const Play = ({ className = 'h-3.5 w-3.5' }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" /></svg>
+      );
+      const Clock = () => (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7v5l3.5 2" /></svg>
+      );
+      const Globe = () => (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M3.8 12h16.4M12 3.5c2.1 2.4 3.2 5.2 3.2 8.5S14.1 18.1 12 20.5c-2.1-2.4-3.2-5.2-3.2-8.5S9.9 5.9 12 3.5Z" /></svg>
+      );
+      const ImageIcon = () => (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="m4.5 17 4.5-4 3 2.5 2.5-2 5 3.5" /></svg>
+      );
+      const MovieIcon = () => (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2" /><path d="M7.5 5.5v13M16.5 5.5v13M3.5 10h4M16.5 10h4M3.5 14h4M16.5 14h4" /></svg>
+      );
+      const Lightbulb = () => (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M9 18h6M9.7 21h4.6M8.3 14.6a6.5 6.5 0 1 1 7.4 0c-.7.5-1.1 1.2-1.2 2H9.5c-.1-.8-.5-1.5-1.2-2Z" /><path d="M12 3v1M4.9 6l.8.8M19.1 6l-.8.8" /></svg>
+      );
+
+      function FadingVideo({ src, className, style }) {
+        const videoRef = React.useRef(null);
+        const rafRef = React.useRef(null);
+        const timeoutRef = React.useRef(null);
+        const fadingOutRef = React.useRef(false);
+        const FADE_MS = 500;
+        const FADE_OUT_LEAD = 0.55;
+
+        const fadeTo = React.useCallback((target, duration) => {
+          const video = videoRef.current;
+          if (!video) return;
+          if (rafRef.current) cancelAnimationFrame(rafRef.current);
+          const startOpacity = Number.parseFloat(video.style.opacity || '0') || 0;
+          const start = performance.now();
+          const tick = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            video.style.opacity = String(startOpacity + (target - startOpacity) * progress);
+            if (progress < 1) rafRef.current = requestAnimationFrame(tick);
+          };
+          rafRef.current = requestAnimationFrame(tick);
+        }, []);
+
+        React.useEffect(() => {
+          const video = videoRef.current;
+          if (!video) return undefined;
+          const onLoadedData = () => {
+            video.style.opacity = '0';
+            const playback = video.play();
+            if (playback) playback.catch(() => {});
+            fadeTo(1, FADE_MS);
+          };
+          const onTimeUpdate = () => {
+            const remaining = video.duration - video.currentTime;
+            if (!fadingOutRef.current && Number.isFinite(remaining) && remaining <= FADE_OUT_LEAD && remaining > 0) {
+              fadingOutRef.current = true;
+              fadeTo(0, FADE_MS);
+            }
+          };
+          const onEnded = () => {
+            video.style.opacity = '0';
+            timeoutRef.current = window.setTimeout(() => {
+              video.currentTime = 0;
+              const playback = video.play();
+              if (playback) playback.catch(() => {});
+              fadingOutRef.current = false;
+              fadeTo(1, FADE_MS);
+            }, 100);
+          };
+          video.addEventListener('loadeddata', onLoadedData);
+          video.addEventListener('timeupdate', onTimeUpdate);
+          video.addEventListener('ended', onEnded);
+          return () => {
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            video.removeEventListener('loadeddata', onLoadedData);
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            video.removeEventListener('ended', onEnded);
+          };
+        }, [fadeTo]);
+
+        return <video ref={videoRef} className={className} style={{ ...style, opacity: 0 }} src={src} autoPlay muted playsInline preload="auto" />;
+      }
+
+      function BlurText({ children, className = '' }) {
+        const [visible, setVisible] = React.useState(false);
+        const ref = React.useRef(null);
+        React.useEffect(() => {
+          const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
+          }, { threshold: 0.1 });
+          if (ref.current) observer.observe(ref.current);
+          return () => observer.disconnect();
+        }, []);
+        return (
+          <div ref={ref} className={`flex flex-wrap justify-center gap-y-[0.1em] ${className}`}>
+            {children.split(' ').map((word, i) => (
+              <motion.span key={`${word}-${i}`} className="inline-block" style={{ marginRight: '0.28em' }} initial={{ filter: 'blur(10px)', opacity: 0, y: 50 }} animate={visible ? { filter: ['blur(10px)', 'blur(5px)', 'blur(0px)'], opacity: [0, 0.5, 1], y: [50, -5, 0] } : {}} transition={{ duration: 0.7, delay: i * 0.1, times: [0, 0.5, 1], ease: 'easeOut' }}>
+                {word}
+              </motion.span>
+            ))}
+          </div>
+        );
+      }
+
+      function LoveDays() {
+        const start = React.useMemo(() => new Date(2025, 3, 25), []);
+        const getDays = React.useCallback(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return Math.max(0, Math.floor((today.getTime() - start.getTime()) / 86400000));
+        }, [start]);
+        const [days, setDays] = React.useState(getDays);
+
+        React.useEffect(() => {
+          const update = () => setDays(getDays());
+          const now = new Date();
+          const nextMidnight = new Date(now);
+          nextMidnight.setHours(24, 0, 2, 0);
+          let interval;
+          const timeout = window.setTimeout(() => {
+            update();
+            interval = window.setInterval(update, 86400000);
+          }, nextMidnight.getTime() - now.getTime());
+          return () => {
+            window.clearTimeout(timeout);
+            if (interval) window.clearInterval(interval);
+          };
+        }, [getDays]);
+
+        return <p className="mt-2 text-sm font-light leading-relaxed text-white/95 sm:text-base">恋爱开始 2025.04.25<br /><span className="font-medium">已经相爱 {days} 天</span></p>;
+      }
+
+      const rise = (delay) => ({ initial: { opacity: 0, y: 18, filter: 'blur(6px)' }, animate: { opacity: 1, y: 0, filter: 'blur(0px)' }, transition: { delay, duration: 0.7, ease: 'easeOut' } });
+      const MEMORY_ITEMS = [
+        { image: './memory-hands.jpg', text: '牵手的日常' },
+        { image: './memory-ring.jpg', text: '藏在指尖的心意' },
+        { image: './love-photo.jpg', text: '我们的合照' },
+        { image: './memory-dinner.jpg', text: '晚餐时光' },
+        { image: './memory-red-standing.jpg', text: '红裙时刻' },
+        { image: './memory-red-sitting.jpg', text: '怦然心动' },
+        { image: './memory-garden-profile.jpg', text: '花园午后' },
+        { image: './memory-garden-seat.jpg', text: '绿意时光' },
+      ];
+
+      function CircularGallery({ items, bend = 2.6, scrollEase = 0.06, scrollSpeed = 1.5 }) {
+        const containerRef = React.useRef(null);
+        const [fallback, setFallback] = React.useState(false);
+        const [caption, setCaption] = React.useState(items[0]?.text || '我们的片段');
+
+        React.useEffect(() => {
+          let cancelled = false;
+          let frame = 0;
+          let renderer;
+          let container = containerRef.current;
+          let cleanup = () => {};
+
+          import('https://cdn.jsdelivr.net/npm/ogl@1.0.11/src/index.js').then((ogl) => {
+            if (cancelled || !container) return;
+            const { Renderer, Camera, Transform, Plane, Mesh, Program, Texture } = ogl;
+            renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio || 1, 2), alpha: true, antialias: true });
+            const gl = renderer.gl;
+            container.appendChild(gl.canvas);
+            const camera = new Camera(gl, { fov: 45 });
+            camera.position.z = 20;
+            const scene = new Transform();
+            const geometry = new Plane(gl, { widthSegments: 40, heightSegments: 20 });
+            const scroll = { current: 0, target: 0, start: 0 };
+            const medias = [];
+            let width = 1;
+            let lastCaption = -1;
+            let dragging = false;
+            let startX = 0;
+            let loaded = 0;
+
+            const vertex = `
+              attribute vec3 position;
+              attribute vec2 uv;
+              uniform mat4 modelViewMatrix;
+              uniform mat4 projectionMatrix;
+              uniform float uTime;
+              uniform float uSpeed;
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                vec3 p = position;
+                p.z += sin(p.x * 4.0 + uTime) * 0.08 * (1.0 + uSpeed * 2.0);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+              }
+            `;
+            const fragment = `
+              precision highp float;
+              uniform sampler2D tMap;
+              uniform vec2 uImageSize;
+              uniform vec2 uPlaneSize;
+              varying vec2 vUv;
+              void main() {
+                vec2 ratio = vec2(
+                  min((uPlaneSize.x / uPlaneSize.y) / (uImageSize.x / uImageSize.y), 1.0),
+                  min((uPlaneSize.y / uPlaneSize.x) / (uImageSize.y / uImageSize.x), 1.0)
+                );
+                vec2 uv = vec2(vUv.x * ratio.x + (1.0 - ratio.x) * 0.5, vUv.y * ratio.y + (1.0 - ratio.y) * 0.5);
+                gl_FragColor = texture2D(tMap, uv);
+              }
+            `;
+
+            items.forEach((item, index) => {
+              const texture = new Texture(gl, { generateMipmaps: true });
+              const program = new Program(gl, {
+                vertex,
+                fragment,
+                uniforms: {
+                  tMap: { value: texture },
+                  uImageSize: { value: [1, 1] },
+                  uPlaneSize: { value: [1, 1] },
+                  uTime: { value: Math.random() * 10 },
+                  uSpeed: { value: 0 },
+                },
+              });
+              const mesh = new Mesh(gl, { geometry, program });
+              mesh.setParent(scene);
+              const image = new Image();
+              image.onload = () => {
+                texture.image = image;
+                program.uniforms.uImageSize.value = [image.naturalWidth, image.naturalHeight];
+                loaded += 1;
+              };
+              image.onerror = () => { loaded += 1; };
+              image.src = item.image;
+              medias.push({ mesh, program, index });
+            });
+
+            const resize = () => {
+              const screen = { width: container.clientWidth, height: container.clientHeight };
+              renderer.setSize(screen.width, screen.height);
+              camera.perspective({ aspect: screen.width / screen.height });
+              const viewportHeight = 2 * Math.tan((camera.fov * Math.PI) / 360) * camera.position.z;
+              const planeHeight = viewportHeight * 0.62;
+              medias.forEach((media) => {
+                media.mesh.scale.set(planeHeight * 0.72, planeHeight, 1);
+                media.program.uniforms.uPlaneSize.value = [media.mesh.scale.x, media.mesh.scale.y];
+              });
+              width = planeHeight * 0.72 + 0.9;
+            };
+            const wrap = (value, size) => ((value + size / 2) % size + size) % size - size / 2;
+            const update = () => {
+              scroll.current += (scroll.target - scroll.current) * scrollEase;
+              const total = width * medias.length;
+              let nearest = 0;
+              let nearestDistance = Infinity;
+              medias.forEach((media) => {
+                const x = wrap(media.index * width - scroll.current, total);
+                media.mesh.position.x = x;
+                media.mesh.position.y = -Math.abs(x) * Math.abs(x) * bend * 0.018;
+                media.mesh.rotation.z = -x * bend * 0.032;
+                media.program.uniforms.uSpeed.value = Math.min(1, Math.abs(scroll.target - scroll.current) * 0.03);
+                media.program.uniforms.uTime.value += 0.018;
+                if (Math.abs(x) < nearestDistance) { nearestDistance = Math.abs(x); nearest = media.index; }
+              });
+              if (nearest !== lastCaption) { lastCaption = nearest; setCaption(items[nearest].text); }
+              renderer.render({ scene, camera });
+              frame = requestAnimationFrame(update);
+            };
+            const onWheel = (event) => { event.preventDefault(); scroll.target += event.deltaY * 0.006 * scrollSpeed; };
+            const onPointerDown = (event) => { dragging = true; startX = event.clientX; scroll.start = scroll.target; container.setPointerCapture?.(event.pointerId); };
+            const onPointerMove = (event) => { if (dragging) scroll.target = scroll.start - (event.clientX - startX) * 0.018 * scrollSpeed; };
+            const onPointerUp = () => { dragging = false; };
+
+            resize();
+            update();
+            window.addEventListener('resize', resize);
+            container.addEventListener('wheel', onWheel, { passive: false });
+            container.addEventListener('pointerdown', onPointerDown);
+            container.addEventListener('pointermove', onPointerMove);
+            container.addEventListener('pointerup', onPointerUp);
+            container.addEventListener('pointercancel', onPointerUp);
+            cleanup = () => {
+              cancelAnimationFrame(frame);
+              window.removeEventListener('resize', resize);
+              container.removeEventListener('wheel', onWheel);
+              container.removeEventListener('pointerdown', onPointerDown);
+              container.removeEventListener('pointermove', onPointerMove);
+              container.removeEventListener('pointerup', onPointerUp);
+              container.removeEventListener('pointercancel', onPointerUp);
+              if (gl.canvas.parentNode) gl.canvas.parentNode.removeChild(gl.canvas);
+            };
+          }).catch(() => setFallback(true));
+
+          return () => { cancelled = true; cleanup(); };
+        }, [items, bend, scrollEase, scrollSpeed]);
+
+        return <div className="relative h-full"><div ref={containerRef} className="circular-gallery" tabIndex="0" role="region" aria-label="我们的滑动相册">{fallback && <div className="gallery-fallback">{items.map((item) => <figure key={item.text}><img src={item.image} alt={item.text} /><figcaption>{item.text}</figcaption></figure>)}</div>}</div><p className="mt-3 text-center text-sm text-white/70">{caption} · 拖动或滚动浏览</p></div>;
+      }
+
+      function PhotoCarousel({ items }) {
+        const [active, setActive] = React.useState(0);
+        const startX = React.useRef(0);
+        const go = React.useCallback((direction) => {
+          setActive((current) => (current + direction + items.length) % items.length);
+        }, [items.length]);
+        const onPointerDown = (event) => {
+          startX.current = event.clientX;
+          event.currentTarget.setPointerCapture?.(event.pointerId);
+        };
+        const onPointerUp = (event) => {
+          const delta = event.clientX - startX.current;
+          if (Math.abs(delta) > 32) go(delta < 0 ? 1 : -1);
+        };
+        const current = items[active];
+        const previous = items[(active - 1 + items.length) % items.length];
+        const next = items[(active + 1) % items.length];
+        const onButtonClick = (direction, event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          go(direction);
+        };
+        const stopCarouselDrag = (event) => event.stopPropagation();
+
+        return <div className="memory-carousel" tabIndex="0" role="region" aria-label="我们的滑动相册，支持拖动或方向键浏览" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onKeyDown={(event) => { if (event.key === 'ArrowRight') go(1); if (event.key === 'ArrowLeft') go(-1); }}>
+          <figure className="memory-preview memory-preview--left"><img src={previous.image} alt="上一张回忆预览" draggable="false" /></figure>
+          <figure className="memory-focus"><img src={current.image} alt={current.text} draggable="false" /></figure>
+          <figure className="memory-preview memory-preview--right"><img src={next.image} alt="下一张回忆预览" draggable="false" /></figure>
+          <button className="memory-nav memory-nav--prev" type="button" title="上一张" aria-label="上一张" onPointerDown={stopCarouselDrag} onPointerUp={stopCarouselDrag} onClick={(event) => onButtonClick(-1, event)}>‹</button>
+          <button className="memory-nav memory-nav--next" type="button" title="下一张" aria-label="下一张" onPointerDown={stopCarouselDrag} onPointerUp={stopCarouselDrag} onClick={(event) => onButtonClick(1, event)}>›</button>
+        </div>;
+      }
+
+      function App() {
+        return (
+          <main className="overflow-hidden bg-black font-body">
+            <section id="home" className="relative flex min-h-screen items-center justify-center px-4 py-12">
+              <FadingVideo className="video-layer absolute left-1/2 top-0 z-0 max-w-none -translate-x-1/2 object-cover object-top" style={{ width: '120%', height: '120%' }} src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_094631_d30ab262-45ee-4b7d-99f3-5d5848c8ef13.mp4" />
+              <header className="absolute top-7 z-10 w-full px-4 text-center drop-shadow-[0_2px_14px_rgba(0,0,0,0.8)] sm:top-9">
+                <h1 className="whitespace-nowrap text-2xl font-heading italic text-white sm:text-3xl md:text-4xl">大骏和小雪的幸福网站</h1>
+                <LoveDays />
+              </header>
+              <div className="relative z-10 flex w-full max-w-5xl flex-col items-center text-center">
+                <motion.p {...rise(0.8)} className="max-w-xl text-base font-light leading-relaxed text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] md:text-lg">把每一次相遇、每一个日常，都悄悄收藏成只属于我们的故事。</motion.p>
+              </div>
+            </section>
+
+            <section id="memories" className="min-h-screen bg-[#110d10] px-4 pb-24 pt-32 sm:px-8 sm:pt-36 md:px-16 lg:px-20">
+              <div className="mx-auto w-full max-w-7xl">
+                <p className="text-xs font-medium tracking-[0.12em] text-white/65">// Our memories</p>
+                <h2 className="mt-4 whitespace-nowrap text-3xl font-heading italic leading-none text-white sm:text-5xl md:text-6xl">翻阅我们的每一刻</h2>
+                <div className="mt-14 h-[640px] sm:h-[700px]">
+                  <PhotoCarousel items={MEMORY_ITEMS} />
+                </div>
+              </div>
+            </section>
+
+            <section id="beauty" className="min-h-screen bg-[#0b090b] px-4 py-24 sm:px-8 md:px-16 lg:px-20">
+              <div className="mx-auto flex w-full max-w-5xl flex-col items-center">
+                <p className="text-xs font-medium tracking-[0.12em] text-white/65">// Beautiful moments</p>
+                <h2 className="mt-4 text-center text-5xl font-heading italic leading-none text-white sm:text-6xl">宝宝美丽的时刻</h2>
+                <div className="relative mt-12 aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-lg bg-black">
+                  <FadingVideo className="absolute inset-0 h-full w-full object-cover" style={{ width: '100%', height: '100%' }} src="./baby-beauty.mp4" />
+                </div>
+              </div>
+            </section>
+          </main>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+  </body>
+</html>
