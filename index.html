@@ -82,18 +82,21 @@
       .gallery-fallback figure { flex: 0 0 min(72vw, 360px); margin: 0; scroll-snap-align: center; }
       .gallery-fallback img { display: block; width: 100%; height: calc(100% - 32px); border-radius: 8px; object-fit: cover; }
       .gallery-fallback figcaption { margin-top: 10px; text-align: center; font-size: 13px; color: rgba(255,255,255,0.75); }
-      .memory-carousel { position: relative; display: grid; box-sizing: border-box; height: 100%; min-height: 640px; padding: 44px 0 56px; place-items: center; overflow: hidden; border: 1px solid #30283a; border-radius: 28px; background: #110e15; outline: none; }
+      .memory-carousel { position: relative; display: grid; box-sizing: border-box; height: 100%; min-height: 640px; padding: 44px 0 56px; place-items: center; overflow: hidden; border: 1px solid #30283a; border-radius: 28px; background: #110e15; outline: none; touch-action: pan-y; user-select: none; }
       .memory-carousel:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
-      .memory-focus { position: relative; z-index: 3; width: fit-content; max-width: 70vw; margin: 0; transition: transform 360ms ease; }
+      .memory-focus { position: relative; z-index: 3; width: fit-content; max-width: 70vw; margin: 0; will-change: transform, opacity; }
+      .memory-focus--changing { animation: memory-focus-in 260ms cubic-bezier(.22, .8, .28, 1) both; }
       .memory-focus img { display: block; width: auto; max-width: 100%; height: min(55vh, 440px); aspect-ratio: .78; border-radius: 14px; object-fit: cover; box-shadow: 0 28px 58px rgba(0,0,0,.4); }
-      .memory-preview { position: absolute; top: 50%; z-index: 1; width: min(20vw, 220px); margin: 0; opacity: .45; transition: transform 360ms ease, opacity 360ms ease; }
+      .memory-preview { position: absolute; top: 50%; z-index: 1; width: min(20vw, 220px); margin: 0; opacity: .45; will-change: transform, opacity; transition: transform 260ms cubic-bezier(.22, .8, .28, 1), opacity 260ms ease; }
       .memory-preview img { display: block; width: 100%; aspect-ratio: .78; border-radius: 12px; object-fit: cover; filter: saturate(.7) brightness(.75); }
       .memory-preview--left { left: max(-2vw, -20px); transform: translateY(-50%) rotate(-7deg); }
       .memory-preview--right { right: max(-2vw, -20px); transform: translateY(-50%) rotate(7deg); }
       .memory-nav { position: absolute; top: 50%; z-index: 4; display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; background: rgba(17,14,21,.72); color: #fff; cursor: pointer; font-size: 22px; line-height: 1; transform: translateY(-50%); }
       .memory-nav:hover { background: rgba(255,255,255,.14); }
+      .memory-nav:disabled { cursor: wait; opacity: .55; }
       .memory-nav--prev { left: max(24px, 8vw); }
       .memory-nav--next { right: max(24px, 8vw); }
+      @keyframes memory-focus-in { from { opacity: .62; transform: scale(.975); } to { opacity: 1; transform: scale(1); } }
       @media (max-width: 640px) {
         .memory-carousel { min-height: 500px; padding: 34px 0 46px; border-radius: 18px; }
         .memory-focus { max-width: 70vw; }
@@ -256,14 +259,18 @@
 
       const rise = (delay) => ({ initial: { opacity: 0, y: 18, filter: 'blur(6px)' }, animate: { opacity: 1, y: 0, filter: 'blur(0px)' }, transition: { delay, duration: 0.7, ease: 'easeOut' } });
       const MEMORY_ITEMS = [
-        { image: './memory-hands.jpg', text: '牵手的日常' },
-        { image: './memory-ring.jpg', text: '藏在指尖的心意' },
-        { image: './love-photo.jpg', text: '我们的合照' },
-        { image: './memory-dinner.jpg', text: '晚餐时光' },
-        { image: './memory-red-standing.jpg', text: '红裙时刻' },
-        { image: './memory-red-sitting.jpg', text: '怦然心动' },
-        { image: './memory-garden-profile.jpg', text: '花园午后' },
-        { image: './memory-garden-seat.jpg', text: '绿意时光' },
+        { image: './assets/memory-hands.jpg', text: '牵手的日常' },
+        { image: './assets/memory-ring.jpg', text: '藏在指尖的心意' },
+        { image: './assets/love-photo.jpg', text: '我们的合照' },
+        { image: './assets/memory-dinner.jpg', text: '晚餐时光' },
+        { image: './assets/memory-red-standing.jpg', text: '红裙时刻' },
+        { image: './assets/memory-red-sitting.jpg', text: '怦然心动' },
+        { image: './assets/memory-garden-profile.jpg', text: '花园午后' },
+        { image: './assets/memory-garden-seat.jpg', text: '绿意时光' },
+        { image: './assets/memory-beach-night.jpg', text: '海边夜色' },
+        { image: './assets/memory-train-window.jpg', text: '列车倒影' },
+        { image: './assets/memory-gold-ring.jpg', text: '金色心意' },
+        { image: './assets/memory-gold-rings.jpg', text: '我们的约定' },
       ];
 
       function CircularGallery({ items, bend = 2.6, scrollEase = 0.06, scrollSpeed = 1.5 }) {
@@ -417,9 +424,33 @@
 
       function PhotoCarousel({ items }) {
         const [active, setActive] = React.useState(0);
+        const [isTransitioning, setIsTransitioning] = React.useState(false);
         const startX = React.useRef(0);
+        const transitionLock = React.useRef(false);
+        const transitionTimer = React.useRef(null);
+
+        React.useEffect(() => {
+          const preload = (source) => {
+            const image = new Image();
+            image.decoding = 'async';
+            image.src = source;
+            image.decode?.().catch(() => {});
+          };
+          items.forEach((item) => preload(item.image));
+        }, [items]);
+
+        React.useEffect(() => () => window.clearTimeout(transitionTimer.current), []);
+
         const go = React.useCallback((direction) => {
+          if (transitionLock.current || !items.length) return;
+          transitionLock.current = true;
+          setIsTransitioning(true);
           setActive((current) => (current + direction + items.length) % items.length);
+          window.clearTimeout(transitionTimer.current);
+          transitionTimer.current = window.setTimeout(() => {
+            transitionLock.current = false;
+            setIsTransitioning(false);
+          }, 260);
         }, [items.length]);
         const onPointerDown = (event) => {
           startX.current = event.clientX;
@@ -439,12 +470,12 @@
         };
         const stopCarouselDrag = (event) => event.stopPropagation();
 
-        return <div className="memory-carousel" tabIndex="0" role="region" aria-label="我们的滑动相册，支持拖动或方向键浏览" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onKeyDown={(event) => { if (event.key === 'ArrowRight') go(1); if (event.key === 'ArrowLeft') go(-1); }}>
-          <figure className="memory-preview memory-preview--left"><img src={previous.image} alt="上一张回忆预览" draggable="false" /></figure>
-          <figure className="memory-focus"><img src={current.image} alt={current.text} draggable="false" /></figure>
-          <figure className="memory-preview memory-preview--right"><img src={next.image} alt="下一张回忆预览" draggable="false" /></figure>
-          <button className="memory-nav memory-nav--prev" type="button" title="上一张" aria-label="上一张" onPointerDown={stopCarouselDrag} onPointerUp={stopCarouselDrag} onClick={(event) => onButtonClick(-1, event)}>‹</button>
-          <button className="memory-nav memory-nav--next" type="button" title="下一张" aria-label="下一张" onPointerDown={stopCarouselDrag} onPointerUp={stopCarouselDrag} onClick={(event) => onButtonClick(1, event)}>›</button>
+        return <div className="memory-carousel" tabIndex="0" role="region" aria-label="我们的滑动相册，支持拖动或方向键浏览" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onKeyDown={(event) => { if (event.key === 'ArrowRight') { event.preventDefault(); go(1); } if (event.key === 'ArrowLeft') { event.preventDefault(); go(-1); } }}>
+          <figure className="memory-preview memory-preview--left"><img src={previous.image} alt="上一张回忆预览" decoding="async" fetchPriority="low" draggable="false" /></figure>
+          <figure className={`memory-focus${isTransitioning ? ' memory-focus--changing' : ''}`}><img src={current.image} alt={current.text} decoding="async" fetchPriority="high" draggable="false" /></figure>
+          <figure className="memory-preview memory-preview--right"><img src={next.image} alt="下一张回忆预览" decoding="async" fetchPriority="low" draggable="false" /></figure>
+          <button className="memory-nav memory-nav--prev" type="button" title="上一张" aria-label="上一张" disabled={isTransitioning} onPointerDown={stopCarouselDrag} onPointerUp={stopCarouselDrag} onClick={(event) => onButtonClick(-1, event)}>‹</button>
+          <button className="memory-nav memory-nav--next" type="button" title="下一张" aria-label="下一张" disabled={isTransitioning} onPointerDown={stopCarouselDrag} onPointerUp={stopCarouselDrag} onClick={(event) => onButtonClick(1, event)}>›</button>
         </div>;
       }
 
@@ -458,7 +489,7 @@
                 <LoveDays />
               </header>
               <div className="relative z-10 flex w-full max-w-5xl flex-col items-center text-center">
-                <motion.p {...rise(0.8)} className="max-w-xl text-base font-light leading-relaxed text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] md:text-lg">把每一次相遇、每一个日常，都悄悄收藏成只属于我们的故事。</motion.p>
+                <motion.p {...rise(0.8)} className="max-w-xl text-base font-light leading-relaxed text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] md:text-lg">哒哒哒，让我看看是哪位小可爱回家啦</motion.p>
               </div>
             </section>
 
@@ -477,7 +508,7 @@
                 <p className="text-xs font-medium tracking-[0.12em] text-white/65">// Beautiful moments</p>
                 <h2 className="mt-4 text-center text-5xl font-heading italic leading-none text-white sm:text-6xl">宝宝美丽的时刻</h2>
                 <div className="relative mt-12 aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-lg bg-black">
-                  <FadingVideo className="absolute inset-0 h-full w-full object-cover" style={{ width: '100%', height: '100%' }} src="./baby-beauty.mp4" />
+                  <FadingVideo className="absolute inset-0 h-full w-full object-cover" style={{ width: '100%', height: '100%' }} src="./assets/baby-beauty.mp4" />
                 </div>
               </div>
             </section>
